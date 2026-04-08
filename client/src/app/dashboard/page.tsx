@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     Button, Box, Typography, Paper,
-    List, ListItem, ListItemText, IconButton, InputBase, Avatar
+    List, ListItem, ListItemText, IconButton, InputBase, Avatar, Checkbox
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -26,7 +26,6 @@ export default function ShopingListPage() {
     const [taskQty, setTaskQty] = useState('');
     const [loading, setLoading] = useState(true);
     const [isMounted, setIsMounted] = useState(false);
-
 
     const [editId, setEditId] = useState<string | null>(null);
     const [editName, setEditName] = useState('');
@@ -68,7 +67,7 @@ export default function ShopingListPage() {
             const userId = localStorage.getItem('userId');
             const res = await API.post('/todos', {
                 task: taskName.trim(),
-                quantity: parseInt(taskQty, 10) || 1,
+                quantity: parseInt(taskQty, 10) || 1, // Fixed: ensure it's a number
                 userId: userId
             });
             setTodos([res.data, ...todos]);
@@ -88,6 +87,7 @@ export default function ShopingListPage() {
 
     const handleUpdate = async (id: string) => {
         try {
+            // UPDATED: Now sending both task and quantity
             const res = await API.put(`/todos/${id}`, {
                 task: editName,
                 quantity: parseInt(editQty, 10) || 1
@@ -97,6 +97,17 @@ export default function ShopingListPage() {
             toast.info("Updated!");
         } catch (err) {
             toast.error("Update failed");
+        }
+    };
+
+    const toggleComplete = async (todo: Todo) => {
+        try {
+            const res = await API.put(`/todos/${todo._id}`, {
+                completed: !todo.completed
+            });
+            setTodos(todos.map(t => t._id === todo._id ? res.data : t));
+        } catch (err) {
+            toast.error("Toggle failed");
         }
     };
 
@@ -125,7 +136,6 @@ export default function ShopingListPage() {
             fontFamily: '"Poppins", sans-serif'
         }}>
 
-
             <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', p: 2 }}>
                 <Paper elevation={0} sx={{
                     width: '95%',
@@ -136,22 +146,14 @@ export default function ShopingListPage() {
                     overflow: 'hidden',
                     border: '1px solid rgba(255,255,255,0.05)',
                     boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
-
-                    background: `
-        /* Top Layer: Dark semi-transparent overlay to keep text readable */
-        linear-gradient(180deg, rgba(51, 54, 63, 0.95) 0%, rgba(30, 32, 38, 0.9) 60%, rgba(30, 32, 38, 0.4) 100%),
-        /* Bottom Layer: The colorful diffused glow */
-        linear-gradient(90deg, #FF4B2B 0%, #FFB75E 50%, #6A11CB 100%)
-    `,
-
+                    background: `linear-gradient(180deg, rgba(51, 54, 63, 0.95) 0%, rgba(30, 32, 38, 0.9) 60%, rgba(30, 32, 38, 0.4) 100%), 
+                                 linear-gradient(90deg, #FF4B2B 0%, #FFB75E 50%, #6A11CB 100%)`,
                     backgroundSize: 'cover',
-
-
                     backdropFilter: 'blur(10px)',
                 }}>
                     <Box sx={{ mb: 4, textAlign: 'center' }}>
                         <Typography variant="h2" sx={{ fontWeight: '700', color: colors.textPrimary, fontSize: '38px', mb: 3 }}>
-                            Shoping List
+                            Shopping List
                         </Typography>
                         <IconButton onClick={handleLogout} sx={{ position: 'absolute', top: 15, right: 15, color: colors.accent, cursor: 'pointer' }}>
                             <LogoutIcon fontSize="small" />
@@ -220,7 +222,18 @@ export default function ShopingListPage() {
                                         <Avatar sx={{ bgcolor: colors.accent, color: '#000', width: 28, height: 28, borderRadius: '4px', fontSize: '12px', fontWeight: '700', mr: 2 }}>
                                             {todo.quantity || '1'}
                                         </Avatar>
-                                        <ListItemText primary={todo.task} sx={{ '& .MuiListItemText-primary': { color: colors.textPrimary, fontWeight: '600', fontSize: '15px' } }} />
+                                        <ListItemText
+                                            primary={todo.task}
+                                            sx={{
+                                                '& .MuiListItemText-primary': {
+                                                    color: colors.textPrimary,
+                                                    fontWeight: '600',
+                                                    fontSize: '15px',
+                                                    textDecoration: todo.completed ? 'line-through' : 'none',
+                                                    opacity: todo.completed ? 0.5 : 1
+                                                }
+                                            }}
+                                        />
                                     </>
                                 )}
                             </ListItem>
@@ -228,7 +241,6 @@ export default function ShopingListPage() {
                     </List>
                 </Paper>
             </Box>
-
 
             <Box sx={{ flex: 1, display: { xs: 'none', md: 'flex' }, justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
                 <Box sx={{ width: '80%', height: '80%', position: 'relative' }}>

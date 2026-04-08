@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
 import { TodosService } from './todo.service';
+import { Todo } from './todo.schema';
 
 @Controller('todos')
 export class TodosController {
@@ -16,8 +17,11 @@ export class TodosController {
   }
 
   @Put(':id')
-  async updateTodo(@Param('id') id: string, @Body('completed') completed: boolean) {
-    return this.todosService.update(id, completed);
+  async updateTodo(
+    @Param('id') id: string,
+    @Body() updateData: Partial<Todo> // Receive the whole object
+  ) {
+    return this.todosService.update(id, updateData);
   }
 
   @Delete(':id')

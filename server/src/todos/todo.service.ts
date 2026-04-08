@@ -10,7 +10,7 @@ export class TodosService {
     async syncExternalTodos(userId: string) {
         if (!userId || userId === "null" || userId === "undefined") {
             console.warn("syncExternalTodos called without a valid userId");
-            return []; 
+            return [];
         }
 
         try {
@@ -31,7 +31,7 @@ export class TodosService {
         }
 
         const newTodo = new this.todoModel({
-            userId: new Types.ObjectId(userId), 
+            userId: new Types.ObjectId(userId),
             task,
             quantity: quantity || 1
         });
@@ -39,16 +39,15 @@ export class TodosService {
         return await newTodo.save();
     }
 
-    async update(id: string, completed: boolean) {
+    async update(id: string, updateData: Partial<Todo>) {
         const todo = await this.todoModel.findByIdAndUpdate(
             id,
-            { completed },
+            updateData, // This will now dynamically update whatever is sent (task, quantity, or completed)
             { new: true },
         );
         if (!todo) throw new NotFoundException('Todo not found');
         return todo;
     }
-
     async remove(id: string) {
         const result = await this.todoModel.findByIdAndDelete(id);
         if (!result) throw new NotFoundException('Todo not found');
