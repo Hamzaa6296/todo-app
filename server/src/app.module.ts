@@ -6,11 +6,11 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
-    // 1. Initialize ConfigModule to read .env files
+   
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    // 2. Use forRootAsync to inject the ConfigService
+   
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({

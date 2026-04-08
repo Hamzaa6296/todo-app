@@ -10,7 +10,7 @@ export class Todo extends Document {
   completed!: boolean;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  userId!: Types.ObjectId; // Link task to the logged-in user
+  userId!: Types.ObjectId; 
 }
 
 export const TodoSchema = SchemaFactory.createForClass(Todo);

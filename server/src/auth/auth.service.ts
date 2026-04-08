@@ -4,11 +4,11 @@ import { Model } from 'mongoose';
 import { User } from './user.schema';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
-import * as Brevo from '@getbrevo/brevo'; // Import the whole namespace
+import * as Brevo from '@getbrevo/brevo'; 
 
 @Injectable()
 export class AuthService {
-  // 1. Initialize the new BrevoClient
+
   private readonly brevo = new Brevo.BrevoClient({
     apiKey: process.env.BREVO_API_KEY as string,
   });
@@ -20,7 +20,7 @@ export class AuthService {
 
   private async sendEmail(to: string, subject: string, otp: string | number) {
     try {
-      // 2. Use the new v5.x path: .transactionalEmails.sendTransacEmail
+    
       await this.brevo.transactionalEmails.sendTransacEmail({
         subject: subject,
         htmlContent: `
@@ -57,10 +57,10 @@ export class AuthService {
     const otp = Math.floor(100000 + Math.random() * 900000);
 
     try {
-      // Create user in DB first
+      
       await this.userModel.create({ email: cleanEmail, password: hashedPass, otp });
       
-      // Send email in background
+      
       this.sendEmail(cleanEmail, 'Verify Your Account', otp);
 
       return { message: 'Signup successful. Check your email for OTP.' };
