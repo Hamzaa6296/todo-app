@@ -4,49 +4,41 @@ import { Model } from 'mongoose';
 import { User } from './user.schema';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
-import { Resend } from 'resend';
+import * as Brevo from '@getbrevo/brevo'; // Import the whole namespace
 
 @Injectable()
 export class AuthService {
-  // Initialize Resend with your API Key from Render Environment Variables
-  private readonly resend = new Resend(process.env.RESEND_API_KEY);
+  // 1. Initialize the new BrevoClient
+  private readonly brevo = new Brevo.BrevoClient({
+    apiKey: process.env.BREVO_API_KEY as string,
+  });
 
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
     private jwtService: JwtService,
-  ) { }
+  ) {}
 
   private async sendEmail(to: string, subject: string, otp: string | number) {
     try {
-      // Using Resend's HTTP API instead of SMTP
-      const { data, error } = await this.resend.emails.send({
-        from: 'Todo Support <onboarding@resend.dev>', // Keep this for the free tier test
-        to: [to],
+      // 2. Use the new v5.x path: .transactionalEmails.sendTransacEmail
+      await this.brevo.transactionalEmails.sendTransacEmail({
         subject: subject,
-        html: `
-          <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee;">
-            <h2>Security Verification</h2>
-            <p>Your one-time password (OTP) is:</p>
-            <h1 style="color: #1976d2; letter-spacing: 5px;">${otp}</h1>
-            <p>This code will expire shortly.</p>
-          </div>
-        `,
+        htmlContent: `
+          <div style="font-family: sans-serif; padding: 20px; border: 1px solid #ddd;">
+            <h2>Verify Your Account</h2>
+            <p>Your OTP code is: <b style="font-size: 24px; color: #007bff;">${otp}</b></p>
+          </div>`,
+        sender: { name: "Todo App Support", email: "ah9132517@gmail.com" },
+        to: [{ email: to }],
       });
-
-      if (error) {
-        console.error('❌ Resend API Error:', error);
-      } else {
-        console.log('✅ Email sent via Resend:', data?.id);
-      }
+      console.log('✅ Email sent via Brevo to:', to);
     } catch (error) {
-      console.error('❌ Unexpected Email Error:', error);
+      console.error('❌ Brevo Error:', error instanceof Error ? error.message : String(error));
     }
   }
 
   async signUp(email: string, password: string) {
     const cleanEmail = email.toLowerCase().trim();
-    
-    // Check if DB is reachable
     const existingUser = await this.userModel.findOne({ email: cleanEmail });
 
     if (existingUser) {
@@ -55,31 +47,26 @@ export class AuthService {
         existingUser.otp = newOtp;
         existingUser.password = await bcrypt.hash(password, 10);
         await existingUser.save();
-        
         this.sendEmail(cleanEmail, 'Verify Your Account', newOtp);
         return { message: 'User already exists. New OTP sent.' };
       }
-      throw new BadRequestException('Email already registered and verified.');
+      throw new BadRequestException('Email already registered.');
     }
 
     const hashedPass = await bcrypt.hash(password, 10);
     const otp = Math.floor(100000 + Math.random() * 900000);
 
     try {
-      // THIS is where the user is created in MongoDB
-      const newUser = await this.userModel.create({ 
-        email: cleanEmail, 
-        password: hashedPass, 
-        otp 
-      });
-
-      // Fire the email in the background
+      // Create user in DB first
+      await this.userModel.create({ email: cleanEmail, password: hashedPass, otp });
+      
+      // Send email in background
       this.sendEmail(cleanEmail, 'Verify Your Account', otp);
 
       return { message: 'Signup successful. Check your email for OTP.' };
     } catch (error) {
       console.error("DB_SIGNUP_ERROR:", error);
-      throw new BadRequestException('Signup failed. Ensure MongoDB Atlas IP Whitelist is set to 0.0.0.0/0');
+      throw new BadRequestException('Signup failed. Check Atlas IP Whitelist.');
     }
   }
 
