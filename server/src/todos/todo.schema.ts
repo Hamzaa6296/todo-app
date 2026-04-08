@@ -9,6 +9,9 @@ export class Todo extends Document {
   @Prop({ default: false })
   completed!: boolean;
 
+  @Prop({ type: Number, default: 1 })
+  quantity!: number;
+
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   userId!: Types.ObjectId; 
 }

@@ -9,8 +9,6 @@ import { User, UserSchema } from './user.schema';
   imports: [
    
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
-    
-    
     JwtModule.register({
       secret: 'SUPER_SECRET_KEY', 
       signOptions: { expiresIn: '1d' },

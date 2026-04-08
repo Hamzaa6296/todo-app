@@ -10,8 +10,9 @@ export class TodosController {
     return this.todosService.syncExternalTodos(userId);
   }
   @Post()
-  async createTodo(@Body() body: { userId: string; task: string; quantity: number }) {
-    return this.todosService.create(body.userId, body.task, body.quantity);
+  async createTodo(@Body() body: { userId: string; task: string; quantity?: number }) {
+    const qty = body.quantity ?? 1;
+    return this.todosService.create(body.userId, body.task, qty);
   }
 
   @Put(':id')
